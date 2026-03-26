@@ -47,7 +47,7 @@ BACKUP/
 # Whisper模型 - 只保留指定模型
 models/model/
 models/checkpoints/
-models/测试/
+# models/测试/  # 已修复，可以上传
 
 # Android构建产物
 shurufa/app/build/

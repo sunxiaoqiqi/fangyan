@@ -21,11 +21,51 @@ from typing import Any, Dict, List, Union
 import numpy as np
 import os
 import logging
+import json
 from pathlib import Path
 import librosa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def fix_tokenizer_config_extra_special_tokens(model_path: str):
+    """
+    修复 tokenizer_config.json 中的 extra_special_tokens 格式
+    将数组格式转换为字典格式
+    
+    Args:
+        model_path: 模型保存路径
+    """
+    tokenizer_config_path = Path(model_path) / "tokenizer_config.json"
+    
+    if not tokenizer_config_path.exists():
+        logger.warning(f"tokenizer_config.json 不存在: {tokenizer_config_path}")
+        return
+    
+    try:
+        with open(tokenizer_config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        
+        # 检查 extra_special_tokens 是否为数组格式
+        if "extra_special_tokens" in config and isinstance(config["extra_special_tokens"], list):
+            logger.info("检测到 extra_special_tokens 为数组格式，开始修复...")
+            
+            # 将数组转换为字典格式
+            extra_special_tokens = config["extra_special_tokens"]
+            config["extra_special_tokens"] = {
+                token: token for token in extra_special_tokens
+            }
+            
+            # 保存修复后的配置
+            with open(tokenizer_config_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            
+            logger.info("✅ extra_special_tokens 格式修复完成（数组 -> 字典）")
+        else:
+            logger.info("extra_special_tokens 已是字典格式，无需修复")
+    except Exception as e:
+        logger.error(f"修复 tokenizer_config.json 失败: {str(e)}")
 
 
 @dataclass
@@ -637,6 +677,9 @@ class WhisperFineTuner:
             self.processor.save_pretrained(str(final_model_path))
         
         logger.info(f"模型已保存到: {final_model_path}")
+        
+        # 修复 tokenizer_config.json 中的 extra_special_tokens 格式
+        fix_tokenizer_config_extra_special_tokens(str(final_model_path))
         
         # 评估集评估
         test_wer = None

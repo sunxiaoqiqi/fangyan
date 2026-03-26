@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# 录音文件（不提交到仓库）
+backend/recordings/
+*.webm
+*.wav
+*.mp3
+
+# 环境变量
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 备份文件
+BACKUP/
+
+# 本地数据库文件（Git上传空白数据库）
+*.db
+
+# Whisper模型 - 只保留指定模型
+models/model/
+models/checkpoints/
+models/测试/
+
+# Android构建产物
+shurufa/app/build/
+shurufa/.gradle/
+shurufa/app/release/
+shurufa/app/debug/
+
+# Python字节码
+*.pyc
+*.pyo
+
+# Conda环境
+Miniconda/
+
+# CMake和文档
+bin/
+doc/
+
+# ngrok
+ngrok-v3-stable-windows-amd64/
+
+# 根目录的模型文件碎片（应该只在models/目录）
+added_tokens.json
+config.json
+flax_model.msgpack
+generation_config.json
+merges.txt
+model.safetensors
+normalizer.json
+preprocessor_config.json
+pytorch_model.bin
+special_tokens_map.json
+tf_model.h5
+tokenizer.json
+tokenizer_config.json
+vocab.json
+man/
+
+# 下载脚本
+download_whisper_model.py
+
+# Git属性
+.gitattributes

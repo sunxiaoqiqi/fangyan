@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">语音输入法</string>
+    <string name="subtype_label">常德话语音输入</string>
+    <string name="voice_input_start">开始语音输入</string>
+    <string name="voice_input_stop">停止语音输入</string>
+    <string name="voice_input_permission">需要录音权限</string>
+</resources>

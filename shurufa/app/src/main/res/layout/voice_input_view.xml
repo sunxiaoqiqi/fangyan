@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@android:color/white">
+
+    <!-- 功能栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@android:color/darker_gray">
+
+        <Button
+            android:id="@+id/btn_voice_input"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="语音"
+            android:backgroundTint="@android:color/holo_blue_bright"
+            android:layout_marginRight="4dp" />
+
+        <Button
+            android:id="@+id/btn_keyboard_input"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="键盘"
+            android:backgroundTint="@android:color/holo_green_light"
+            android:layout_marginLeft="4dp" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/transcription_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="点击麦克风开始语音输入"
+        android:textSize="16sp"
+        android:textColor="@android:color/black"
+        android:padding="12dp"
+        android:background="@android:color/transparent"
+        android:gravity="center_vertical"
+        android:minHeight="48dp" />
+    
+    <!-- 转录结果区域（显示累积的转录文本） -->
+    <TextView
+        android:id="@+id/transcription_result_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="80dp"
+        android:maxHeight="200dp"
+        android:padding="8dp"
+        android:textSize="18sp"
+        android:textColor="@android:color/black"
+        android:lineSpacingExtra="4dp"
+        android:background="#F5F5F5"
+        android:hint="转录结果将显示在这里..."
+        android:scrollbars="vertical" />
+
+    <Button
+        android:id="@+id/voice_input_button"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="@string/voice_input_start"
+        android:textSize="18sp"
+        android:backgroundTint="@android:color/holo_blue_bright"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp" />
+
+</LinearLayout>

@@ -1,452 +1,299 @@
----
-language: 
-- en
-- zh
-- de
-- es
-- ru
-- ko
-- fr
-- ja
-- pt
-- tr
-- pl
-- ca
-- nl
-- ar
-- sv
-- it
-- id
-- hi
-- fi
-- vi
-- he
-- uk
-- el
-- ms
-- cs
-- ro
-- da
-- hu
-- ta
-- no
-- th
-- ur
-- hr
-- bg
-- lt
-- la
-- mi
-- ml
-- cy
-- sk
-- te
-- fa
-- lv
-- bn
-- sr
-- az
-- sl
-- kn
-- et
-- mk
-- br
-- eu
-- is
-- hy
-- ne
-- mn
-- bs
-- kk
-- sq
-- sw
-- gl
-- mr
-- pa
-- si
-- km
-- sn
-- yo
-- so
-- af
-- oc
-- ka
-- be
-- tg
-- sd
-- gu
-- am
-- yi
-- lo
-- uz
-- fo
-- ht
-- ps
-- tk
-- nn
-- mt
-- sa
-- lb
-- my
-- bo
-- tl
-- mg
-- as
-- tt
-- haw
-- ln
-- ha
-- ba
-- jw
-- su
-tags:
-- audio
-- automatic-speech-recognition
-- hf-asr-leaderboard
-widget:
-- example_title: Librispeech sample 1
-  src: https://cdn-media.huggingface.co/speech_samples/sample1.flac
-- example_title: Librispeech sample 2
-  src: https://cdn-media.huggingface.co/speech_samples/sample2.flac
-model-index:
-- name: whisper-small
-  results:
-  - task:
-      name: Automatic Speech Recognition
-      type: automatic-speech-recognition
-    dataset:
-      name: LibriSpeech (clean)
-      type: librispeech_asr
-      config: clean
-      split: test
-      args: 
-        language: en
-    metrics:
-    - name: Test WER
-      type: wer
-      value: 3.432213777886737
-  - task:
-      name: Automatic Speech Recognition
-      type: automatic-speech-recognition
-    dataset:
-      name: LibriSpeech (other)
-      type: librispeech_asr
-      config: other
-      split: test
-      args: 
-        language: en
-    metrics:
-    - name: Test WER
-      type: wer
-      value: 7.628304527060248
-  - task:
-      name: Automatic Speech Recognition
-      type: automatic-speech-recognition
-    dataset:
-      name: Common Voice 11.0
-      type: mozilla-foundation/common_voice_11_0
-      config: hi
-      split: test
-      args:
-        language: hi
-    metrics:
-    - name: Test WER
-      type: wer
-      value: 87.3
-  - task:
-      name: Automatic Speech Recognition
-      type: automatic-speech-recognition
-    dataset:
-      name: Common Voice 13.0
-      type: mozilla-foundation/common_voice_13_0
-      config: dv
-      split: test
-      args:
-        language: dv
-    metrics:
-    - name: Wer
-      type: wer
-      value: 125.69809089960707
-pipeline_tag: automatic-speech-recognition
-license: apache-2.0
----
+# 方言输入法 - 31fangyan
 
-# Whisper
+基于 Whisper 模型的方言语音输入法系统，支持方言录音采集、模型微调和语音转文字功能。
 
-Whisper is a pre-trained model for automatic speech recognition (ASR) and speech translation. Trained on 680k hours 
-of labelled data, Whisper models demonstrate a strong ability to generalise to many datasets and domains **without** the need 
-for fine-tuning.
+## 📁 项目结构
 
-Whisper was proposed in the paper [Robust Speech Recognition via Large-Scale Weak Supervision](https://arxiv.org/abs/2212.04356) 
-by Alec Radford et al from OpenAI. The original code repository can be found [here](https://github.com/openai/whisper).
-
-**Disclaimer**: Content for this model card has partly been written by the Hugging Face team, and parts of it were 
-copied and pasted from the original model card.
-
-## Model details
-
-Whisper is a Transformer based encoder-decoder model, also referred to as a _sequence-to-sequence_ model. 
-It was trained on 680k hours of labelled speech data annotated using large-scale weak supervision. 
-
-The models were trained on either English-only data or multilingual data. The English-only models were trained 
-on the task of speech recognition. The multilingual models were trained on both speech recognition and speech 
-translation. For speech recognition, the model predicts transcriptions in the *same* language as the audio. 
-For speech translation, the model predicts transcriptions to a *different* language to the audio.
-
-Whisper checkpoints come in five configurations of varying model sizes.
-The smallest four are trained on either English-only or multilingual data.
-The largest checkpoints are multilingual only. All ten of the pre-trained checkpoints 
-are available on the [Hugging Face Hub](https://huggingface.co/models?search=openai/whisper). The 
-checkpoints are summarised in the following table with links to the models on the Hub:
-
-| Size     | Parameters | English-only                                         | Multilingual                                        |
-|----------|------------|------------------------------------------------------|-----------------------------------------------------|
-| tiny     | 39 M       | [✓](https://huggingface.co/openai/whisper-tiny.en)   | [✓](https://huggingface.co/openai/whisper-tiny)     |
-| base     | 74 M       | [✓](https://huggingface.co/openai/whisper-base.en)   | [✓](https://huggingface.co/openai/whisper-base)     |
-| small    | 244 M      | [✓](https://huggingface.co/openai/whisper-small.en)  | [✓](https://huggingface.co/openai/whisper-small)    |
-| medium   | 769 M      | [✓](https://huggingface.co/openai/whisper-medium.en) | [✓](https://huggingface.co/openai/whisper-medium)   |
-| large    | 1550 M     | x                                                    | [✓](https://huggingface.co/openai/whisper-large)    |
-| large-v2 | 1550 M     | x                                                    | [✓](https://huggingface.co/openai/whisper-large-v2) |
-
-# Usage
-
-To transcribe audio samples, the model has to be used alongside a [`WhisperProcessor`](https://huggingface.co/docs/transformers/model_doc/whisper#transformers.WhisperProcessor).
-
-The `WhisperProcessor` is used to:
-1. Pre-process the audio inputs (converting them to log-Mel spectrograms for the model)
-2. Post-process the model outputs (converting them from tokens to text)
-
-The model is informed of which task to perform (transcription or translation) by passing the appropriate "context tokens". These context tokens 
-are a sequence of tokens that are given to the decoder at the start of the decoding process, and take the following order:
-1. The transcription always starts with the `<|startoftranscript|>` token
-2. The second token is the language token (e.g. `<|en|>` for English)
-3. The third token is the "task token". It can take one of two values: `<|transcribe|>` for speech recognition or `<|translate|>` for speech translation
-4. In addition, a `<|notimestamps|>` token is added if the model should not include timestamp prediction
-
-Thus, a typical sequence of context tokens might look as follows:
 ```
-<|startoftranscript|> <|en|> <|transcribe|> <|notimestamps|>
+31fangyan/
+├── backend/                    # 后端服务
+│   ├── main.py               # FastAPI 主入口
+│   ├── api_audio.py          # 语音转文字 API
+│   ├── api_database.py       # 数据库 API
+│   ├── database.py           # 数据库模型
+│   ├── init_empty_db.py      # 初始化空白数据库脚本
+│   ├── voice_collector.db   # SQLite 数据库（空）
+│   └── recordings/           # 录音文件目录（不上传）
+├── frontend/                  # Vue.js 前端
+│   ├── src/
+│   │   ├── views/           # 页面组件
+│   │   │   ├── LoginPage.vue
+│   │   │   ├── CollectPage.vue
+│   │   │   ├── EvaluatePage.vue
+│   │   │   ├── FineTunePage.vue
+│   │   │   ├── FineTuneHistoryPage.vue
+│   │   │   ├── TestPage.vue
+│   │   │   ├── TranscribePage.vue
+│   │   │   └── UserManagementPage.vue
+│   │   └── main.js
+│   └── package.json
+├── shurufa/                   # Android 输入法应用
+│   ├── app/
+│   │   └── src/main/
+│   │       ├── java/com/example/shurufa/
+│   │       │   ├── MainActivity.kt
+│   │       │   ├── VoiceInputMethodService.kt
+│   │       │   ├── HttpWhisperClient.kt
+│   │       │   ├── audio/
+│   │       │   │   ├── AudioRecorder.kt
+│   │       │   │   ├── WavAudioRecorder.kt
+│   │       │   │   ├── FeatureExtractor.kt
+│   │       │   │   └── VADProcessor.kt
+│   │       │   └── input/
+│   │       │       └── PinyinConverter.kt
+│   │       └── res/
+│   │           └── layout/
+│   │               ├── keyboard_view.xml      # 键盘布局
+│   │               └── voice_input_view.xml   # 语音输入界面
+│   └── build.gradle.kts
+├── models/                    # AI 模型目录
+│   ├── whisper-small/        # Whisper Small 模型
+│   │   ├── config.json
+│   │   ├── model.safetensors
+│   │   ├── tokenizer.json
+│   │   └── ...
+│   └── 正式常德话smalllora/   # 微调后的方言模型
+│       ├── config.json
+│       ├── model.safetensors
+│       └── ...
+├── BACKUP/                    # 本地备份（不上传）
+│   ├── voice_collector.db.bak
+│   └── recordings/
+├── .gitignore
+└── README.md
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Python 3.10+
+- Node.js 18+
+- Android Studio（用于构建输入法 APK）
+
+### 1. 克隆项目
+
+```bash
+git clone git@github.com:sunxiaoqiqi/fangyan.git
+cd fangyan
 ```
-Which tells the model to decode in English, under the task of speech recognition, and not to predict timestamps.
 
-These tokens can either be forced or un-forced. If they are forced, the model is made to predict each token at 
-each position. This allows one to control the output language and task for the Whisper model. If they are un-forced, 
-the Whisper model will automatically predict the output langauge and task itself.
+### 2. 安装后端依赖
 
-The context tokens can be set accordingly:
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+### 3. 安装前端依赖
+
+```bash
+cd frontend
+npm install
+```
+
+### 4. 下载模型文件
+
+项目使用 Hugging Face 上的 Whisper 模型：
+
+**方式一：使用 Git LFS**
+```bash
+cd models
+git lfs install
+git lfs pull
+```
+
+**方式二：手动下载**
+1. 访问 https://huggingface.co/openai/whisper-small
+2. 下载所有文件到 `models/whisper-small/`
+
+### 5. 初始化数据库
+
+```bash
+cd backend
+python init_empty_db.py
+```
+
+### 6. 启动后端服务
+
+```bash
+cd backend
+python main.py
+```
+
+后端服务地址：http://localhost:3000
+
+### 7. 启动前端
+
+```bash
+cd frontend
+npm run dev
+```
+
+前端地址：http://localhost:5173
+
+## 🎯 核心功能
+
+### 1. 方言录音采集
+
+- 用户注册与登录
+- 录音任务分配
+- 录音质量评估
+- 批量音频采集
+
+### 2. 模型微调
+
+- 基于 Whisper Small 微调
+- 自定义训练参数
+- 训练历史记录
+- 模型导出与部署
+
+### 3. 语音转文字
+
+- 实时语音识别
+- 支持方言识别
+- 音频格式转换
+- 批量转录
+
+### 4. Android 输入法
+
+- 语音输入模式
+- 方言识别
+- 拼音转换
+- 实时转录
+
+## 📡 API 接口
+
+### 认证接口
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/auth/login` | 用户登录 |
+| POST | `/api/auth/register` | 用户注册 |
+| GET | `/api/auth/current-user` | 获取当前用户 |
+
+### 录音接口
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | `/api/sentences` | 获取句子列表 |
+| POST | `/api/recordings` | 上传录音 |
+| GET | `/api/recordings` | 获取录音列表 |
+| POST | `/api/recordings/evaluate` | 评估录音质量 |
+
+### 训练接口
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/fine-tune` | 开始微调训练 |
+| GET | `/api/fine-tune/history` | 获取训练历史 |
+| GET | `/api/fine-tune/status/{job_id}` | 查询训练状态 |
+
+### 语音识别接口
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/api/audio/transcribe` | 转录音频文件 |
+| GET | `/api/audio/languages` | 获取支持的语言 |
+
+## 🛠️ 技术栈
+
+### 后端
+
+- **FastAPI** - Web 框架
+- **SQLAlchemy** - ORM
+- **SQLite** - 数据库
+- **Transformers** - Hugging Face 工具库
+- **faster-whisper** - Whisper 模型推理
+
+### 前端
+
+- **Vue 3** - 前端框架
+- **Vite** - 构建工具
+- **Vue Router** - 路由管理
+- **Axios** - HTTP 客户端
+
+### 移动端
+
+- **Kotlin** - Android 开发语言
+- **Jetpack Compose** - UI 框架
+- **OkHttp** - 网络请求
+- **Silero VAD** - 语音活动检测
+
+## ⚙️ 配置说明
+
+### 后端配置
+
+数据库和其他配置在 `backend/database.py` 中：
 
 ```python
-model.config.forced_decoder_ids = WhisperProcessor.get_decoder_prompt_ids(language="english", task="transcribe")
+DATABASE_URL = "sqlite:///voice_collector.db"
+RECORDINGS_DIR = "recordings"
 ```
 
-Which forces the model to predict in English under the task of speech recognition.
+### 模型配置
 
-## Transcription
-
-### English to English 
-In this example, the context tokens are 'unforced', meaning the model automatically predicts the output language
-(English) and task (transcribe).
+模型路径配置在 `backend/api_audio.py` 中：
 
 ```python
->>> from transformers import WhisperProcessor, WhisperForConditionalGeneration
->>> from datasets import load_dataset
-
->>> # load model and processor
->>> processor = WhisperProcessor.from_pretrained("openai/whisper-small")
->>> model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
->>> model.config.forced_decoder_ids = None
-
->>> # load dummy dataset and read audio files
->>> ds = load_dataset("hf-internal-testing/librispeech_asr_dummy", "clean", split="validation")
->>> sample = ds[0]["audio"]
->>> input_features = processor(sample["array"], sampling_rate=sample["sampling_rate"], return_tensors="pt").input_features 
-
->>> # generate token ids
->>> predicted_ids = model.generate(input_features)
->>> # decode token ids to text
->>> transcription = processor.batch_decode(predicted_ids, skip_special_tokens=False)
-['<|startoftranscript|><|en|><|transcribe|><|notimestamps|> Mr. Quilter is the apostle of the middle classes and we are glad to welcome his gospel.<|endoftext|>']
-
->>> transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)
-[' Mr. Quilter is the apostle of the middle classes and we are glad to welcome his gospel.']
-```
-The context tokens can be removed from the start of the transcription by setting `skip_special_tokens=True`.
-
-### French to French 
-The following example demonstrates French to French transcription by setting the decoder ids appropriately. 
-
-```python
->>> from transformers import WhisperProcessor, WhisperForConditionalGeneration
->>> from datasets import Audio, load_dataset
-
->>> # load model and processor
->>> processor = WhisperProcessor.from_pretrained("openai/whisper-small")
->>> model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
->>> forced_decoder_ids = processor.get_decoder_prompt_ids(language="french", task="transcribe")
-
->>> # load streaming dataset and read first audio sample
->>> ds = load_dataset("common_voice", "fr", split="test", streaming=True)
->>> ds = ds.cast_column("audio", Audio(sampling_rate=16_000))
->>> input_speech = next(iter(ds))["audio"]
->>> input_features = processor(input_speech["array"], sampling_rate=input_speech["sampling_rate"], return_tensors="pt").input_features
-
->>> # generate token ids
->>> predicted_ids = model.generate(input_features, forced_decoder_ids=forced_decoder_ids)
->>> # decode token ids to text
->>> transcription = processor.batch_decode(predicted_ids)
-['<|startoftranscript|><|fr|><|transcribe|><|notimestamps|> Un vrai travail intéressant va enfin être mené sur ce sujet.<|endoftext|>']
-
->>> transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)
-[' Un vrai travail intéressant va enfin être mené sur ce sujet.']
+LOCAL_MODEL_PATH = BASE_DIR.parent / "models" / "whisper-small"
+REMOTE_MODEL_NAME = "openai/whisper-small"
 ```
 
-## Translation 
-Setting the task to "translate" forces the Whisper model to perform speech translation.
+### 前端配置
 
-### French to English
+API 地址在 `frontend/src/main.js` 中配置。
 
-```python
->>> from transformers import WhisperProcessor, WhisperForConditionalGeneration
->>> from datasets import Audio, load_dataset
+## 🔧 开发指南
 
->>> # load model and processor
->>> processor = WhisperProcessor.from_pretrained("openai/whisper-small")
->>> model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
->>> forced_decoder_ids = processor.get_decoder_prompt_ids(language="french", task="translate")
+### 添加新的 API 接口
 
->>> # load streaming dataset and read first audio sample
->>> ds = load_dataset("common_voice", "fr", split="test", streaming=True)
->>> ds = ds.cast_column("audio", Audio(sampling_rate=16_000))
->>> input_speech = next(iter(ds))["audio"]
->>> input_features = processor(input_speech["array"], sampling_rate=input_speech["sampling_rate"], return_tensors="pt").input_features
+1. 在 `backend/` 目录下创建或修改 API 文件
+2. 使用 `@app.post()` 或 `@app.get()` 装饰器定义路由
+3. 返回 JSON 响应
 
->>> # generate token ids
->>> predicted_ids = model.generate(input_features, forced_decoder_ids=forced_decoder_ids)
->>> # decode token ids to text
->>> transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)
-[' A very interesting work, we will finally be given on this subject.']
+### 修改输入法键盘布局
+
+编辑 `shurufa/app/src/main/res/layout/keyboard_view.xml`
+
+### 添加新的训练参数
+
+修改 `backend/api_fine_tune.py` 中的训练配置
+
+## 📝 注意事项
+
+- **数据库**：`.gitignore` 中配置了 `*.db` 不上传，clone 后需要运行 `init_empty_db.py`
+- **录音文件**：`backend/recordings/` 目录不上传，包含原始音频文件
+- **备份文件**：`BACKUP/` 目录不上传，包含本地数据备份
+- **模型文件**：需要手动下载或使用 Git LFS
+
+## 🔍 故障排除
+
+### 1. 模型加载失败
+
+如果遇到 SSL 错误或网络问题：
+1. 检查网络连接
+2. 使用代理或 VPN
+3. 手动下载模型文件到 `models/whisper-small/`
+
+### 2. 数据库错误
+
+```bash
+cd backend
+python init_empty_db.py
 ```
 
-## Evaluation
+### 3. 前端无法连接后端
 
-This code snippet shows how to evaluate Whisper Small on [LibriSpeech test-clean](https://huggingface.co/datasets/librispeech_asr):
- 
-```python
->>> from datasets import load_dataset
->>> from transformers import WhisperForConditionalGeneration, WhisperProcessor
->>> import torch
->>> from evaluate import load
+检查后端服务是否在 3000 端口运行。
 
->>> librispeech_test_clean = load_dataset("librispeech_asr", "clean", split="test")
+## 📄 许可证
 
->>> processor = WhisperProcessor.from_pretrained("openai/whisper-small")
->>> model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small").to("cuda")
+本项目仅供学习和研究使用。
 
->>> def map_to_pred(batch):
->>>     audio = batch["audio"]
->>>     input_features = processor(audio["array"], sampling_rate=audio["sampling_rate"], return_tensors="pt").input_features
->>>     batch["reference"] = processor.tokenizer._normalize(batch['text'])
->>> 
->>>     with torch.no_grad():
->>>         predicted_ids = model.generate(input_features.to("cuda"))[0]
->>>     transcription = processor.decode(predicted_ids)
->>>     batch["prediction"] = processor.tokenizer._normalize(transcription)
->>>     return batch
+## 👥 贡献者
 
->>> result = librispeech_test_clean.map(map_to_pred)
+项目开发者：sunxiaoqiqi
 
->>> wer = load("wer")
->>> print(100 * wer.compute(references=result["reference"], predictions=result["prediction"]))
-3.432213777886737
-```
+## 📞 联系方式
 
-## Long-Form Transcription
-
-The Whisper model is intrinsically designed to work on audio samples of up to 30s in duration. However, by using a chunking 
-algorithm, it can be used to transcribe audio samples of up to arbitrary length. This is possible through Transformers 
-[`pipeline`](https://huggingface.co/docs/transformers/main_classes/pipelines#transformers.AutomaticSpeechRecognitionPipeline) 
-method. Chunking is enabled by setting `chunk_length_s=30` when instantiating the pipeline. With chunking enabled, the pipeline 
-can be run with batched inference. It can also be extended to predict sequence level timestamps by passing `return_timestamps=True`:
-
-```python
->>> import torch
->>> from transformers import pipeline
->>> from datasets import load_dataset
-
->>> device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
->>> pipe = pipeline(
->>>   "automatic-speech-recognition",
->>>   model="openai/whisper-small",
->>>   chunk_length_s=30,
->>>   device=device,
->>> )
-
->>> ds = load_dataset("hf-internal-testing/librispeech_asr_dummy", "clean", split="validation")
->>> sample = ds[0]["audio"]
-
->>> prediction = pipe(sample.copy(), batch_size=8)["text"]
-" Mr. Quilter is the apostle of the middle classes, and we are glad to welcome his gospel."
-
->>> # we can also return timestamps for the predictions
->>> prediction = pipe(sample.copy(), batch_size=8, return_timestamps=True)["chunks"]
-[{'text': ' Mr. Quilter is the apostle of the middle classes and we are glad to welcome his gospel.',
-  'timestamp': (0.0, 5.44)}]
-```
-
-Refer to the blog post [ASR Chunking](https://huggingface.co/blog/asr-chunking) for more details on the chunking algorithm.
-
-## Fine-Tuning
-
-The pre-trained Whisper model demonstrates a strong ability to generalise to different datasets and domains. However, 
-its predictive capabilities can be improved further for certain languages and tasks through *fine-tuning*. The blog 
-post [Fine-Tune Whisper with 🤗 Transformers](https://huggingface.co/blog/fine-tune-whisper) provides a step-by-step 
-guide to fine-tuning the Whisper model with as little as 5 hours of labelled data.
-
-### Evaluated Use
-
-The primary intended users of these models are AI researchers studying robustness, generalization, capabilities, biases, and constraints of the current model. However, Whisper is also potentially quite useful as an ASR solution for developers, especially for English speech recognition. We recognize that once models are released, it is impossible to restrict access to only “intended” uses or to draw reasonable guidelines around what is or is not research.
-
-The models are primarily trained and evaluated on ASR and speech translation to English tasks. They show strong ASR results in ~10 languages. They may exhibit additional capabilities, particularly if fine-tuned on certain tasks like voice activity detection, speaker classification, or speaker diarization but have not been robustly evaluated in these areas. We strongly recommend that users perform robust evaluations of the models in a particular context and domain before deploying them.
-
-In particular, we caution against using Whisper models to transcribe recordings of individuals taken without their consent or purporting to use these models for any kind of subjective classification. We recommend against use in high-risk domains like decision-making contexts, where flaws in accuracy can lead to pronounced flaws in outcomes. The models are intended to transcribe and translate speech, use of the model for classification is not only not evaluated but also not appropriate, particularly to infer human attributes.
-
-
-## Training Data
-
-The models are trained on 680,000 hours of audio and the corresponding transcripts collected from the internet. 65% of this data (or 438,000 hours) represents English-language audio and matched English transcripts, roughly 18% (or 126,000 hours) represents non-English audio and English transcripts, while the final 17% (or 117,000 hours) represents non-English audio and the corresponding transcript. This non-English data represents 98 different languages. 
-
-As discussed in [the accompanying paper](https://cdn.openai.com/papers/whisper.pdf), we see that performance on transcription in a given language is directly correlated with the amount of training data we employ in that language.
-
-
-## Performance and Limitations
-
-Our studies show that, over many existing ASR systems, the models exhibit improved robustness to accents, background noise, technical language, as well as zero shot translation from multiple languages into English; and that accuracy on speech recognition and translation is near the state-of-the-art level. 
-
-However, because the models are trained in a weakly supervised manner using large-scale noisy data, the predictions may include texts that are not actually spoken in the audio input (i.e. hallucination). We hypothesize that this happens because, given their general knowledge of language, the models combine trying to predict the next word in audio with trying to transcribe the audio itself.
-
-Our models perform unevenly across languages, and we observe lower accuracy on low-resource and/or low-discoverability languages or languages where we have less training data. The models also exhibit disparate performance on different accents and dialects of particular languages, which may include higher word error rate across speakers of different genders, races, ages, or other demographic criteria. Our full evaluation results are presented in [the paper accompanying this release](https://cdn.openai.com/papers/whisper.pdf). 
-
-In addition, the sequence-to-sequence architecture of the model makes it prone to generating repetitive texts, which can be mitigated to some degree by beam search and temperature scheduling but not perfectly. Further analysis on these limitations are provided in [the paper](https://cdn.openai.com/papers/whisper.pdf). It is likely that this behavior and hallucinations may be worse on lower-resource and/or lower-discoverability languages.
-
-
-## Broader Implications
-
-We anticipate that Whisper models’ transcription capabilities may be used for improving accessibility tools. While Whisper models cannot be used for real-time transcription out of the box – their speed and size suggest that others may be able to build applications on top of them that allow for near-real-time speech recognition and translation. The real value of beneficial applications built on top of Whisper models suggests that the disparate performance of these models may have real economic implications.
-
-There are also potential dual use concerns that come with releasing Whisper. While we hope the technology will be used primarily for beneficial purposes, making ASR technology more accessible could enable more actors to build capable surveillance technologies or scale up existing surveillance efforts, as the speed and accuracy allow for affordable automatic transcription and translation of large volumes of audio communication. Moreover, these models may have some capabilities to recognize specific individuals out of the box, which in turn presents safety concerns related both to dual use and disparate performance. In practice, we expect that the cost of transcription is not the limiting factor of scaling up surveillance projects.
-
-
-### BibTeX entry and citation info
-```bibtex
-@misc{radford2022whisper,
-  doi = {10.48550/ARXIV.2212.04356},
-  url = {https://arxiv.org/abs/2212.04356},
-  author = {Radford, Alec and Kim, Jong Wook and Xu, Tao and Brockman, Greg and McLeavey, Christine and Sutskever, Ilya},
-  title = {Robust Speech Recognition via Large-Scale Weak Supervision},
-  publisher = {arXiv},
-  year = {2022},
-  copyright = {arXiv.org perpetual, non-exclusive license}
-}
-```
-
+- GitHub: https://github.com/sunxiaoqiqi/fangyan
